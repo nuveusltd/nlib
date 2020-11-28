@@ -4,6 +4,8 @@ import(
   "github.com/gin-gonic/gin"
 	"net/http"
 	//"strings"
+	"path"
+	"fmt"
 )
 
 const INDEX = "index.html"
@@ -11,6 +13,35 @@ const INDEX = "index.html"
 type ServeFileSystem interface {
 	http.FileSystem
 	Exists(prefix string, path string) bool
+}
+
+type EscFileSystem struct {
+	Fs http.FileSystem
+}
+
+func (esc *EscFileSystem) Exists(urlPrefix string,fileUrl string)  bool {
+	name:=urlPrefix+fileUrl
+	//if name := strings.TrimPrefix(fileUrl, urlPrefix); len(name) < len(fileUrl) { //bizimle ilgili mi ?
+	f, err := esc.Fs.Open(name);
+	if err!=nil {
+		return false
+	}
+	stats, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	if stats.IsDir() {
+		indexFile := path.Join(name, "index.html")
+		_, err := esc.Fs.Open(indexFile);
+		if err!=nil {
+			return false
+		}
+	}
+	return true
+}
+
+func (esc *EscFileSystem) Open(name string) (http.File, error) {
+	return esc.Fs.Open(name)
 }
 
 /*type binaryFileSystem struct {
@@ -60,13 +91,11 @@ func StaticServeFromBinary(urlPrefix string,sfs ServeFileSystem) gin.HandlerFunc
 	// Middleware ilk olusturuldugunda calisacak bolge
 
 	fileserver := http.FileServer(sfs)
-	if urlPrefix != "" {
-		fileserver = http.StripPrefix(urlPrefix, fileserver)
-	}
 	return func(c *gin.Context) {
 		if sfs.Exists(urlPrefix, c.Request.URL.Path) {
+			c.Request.URL.Path=urlPrefix+"/"+c.Request.URL.Path
 			fileserver.ServeHTTP(c.Writer, c.Request)
 			c.Abort()
-		}
+		} 
 	}
 }
