@@ -5,7 +5,7 @@ import(
 	"net/http"
 	//"strings"
 	"path"
-	"fmt"
+	//"fmt"
 )
 
 const INDEX = "index.html"
@@ -96,6 +96,6 @@ func StaticServeFromBinary(urlPrefix string,sfs ServeFileSystem) gin.HandlerFunc
 			c.Request.URL.Path=urlPrefix+"/"+c.Request.URL.Path
 			fileserver.ServeHTTP(c.Writer, c.Request)
 			c.Abort()
-		} 
+		}
 	}
 }
